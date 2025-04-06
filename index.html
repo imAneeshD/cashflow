@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Cashflow Game</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+            background-color: #f8f9fa;
+        }
+
+        .game-board {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .income-statement,
+        .balance-sheet {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .opportunity-card {
+            background-color: #e9ecef;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .asset {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .liability {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .rat-race-track {
+            height: 300px;
+            background-color: #e9ecef;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .player-token {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #007bff;
+            z-index: 10;
+            transform: translate(-50%, -50%);
+        }
+
+        .dice {
+            width: 60px;
+            height: 60px;
+            background-color: white;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .payday {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            background-color: #28a745;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .opportunity {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background-color: #ffc107;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .doodad {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background-color: #dc3545;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .market {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background-color: #17a2b8;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .fasttrack-entry {
+            position: absolute;
+            right: 10px;
+            bottom: 10px;
+            width: 100px;
+            height: 100px;
+            background-color: gold;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12 text-center">
+                <h1>Rich Dad Poor Dad: Cashflow Game</h1>
+                <div class="btn-group mb-3">
+                    <button id="startGameBtn" class="btn btn-primary">Start New Game</button>
+                    <button id="rollDiceBtn" class="btn btn-success" disabled>Roll Dice</button>
+                    <button id="endTurnBtn" class="btn btn-secondary" disabled>End Turn</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="game-board">
+                    <h3>Rat Race Track</h3>
+                    <div class="rat-race-track">
+                        <div class="player-token" id="playerToken"></div>
+                        <div class="payday" style="top: 20px; left: 20px;">Payday</div>
+                        <div class="opportunity" style="top: 50px; left: 120px;">Deal</div>
+                        <div class="doodad" style="top: 120px; left: 200px;">Doodad</div>
+                        <div class="market" style="top: 200px; left: 120px;">Market</div>
+                        <div class="opportunity" style="top: 230px; left: 20px;">Deal</div>
+                        <div class="doodad" style="top: 170px; left: 280px;">Doodad</div>
+                        <div class="opportunity" style="top: 80px; left: 280px;">Deal</div>
+                        <div class="fasttrack-entry">Fast Track Entry</div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-4">
+                            <div class="dice" id="dice">Roll</div>
+                        </div>
+                        <div class="col-8">
+                            <div id="gameMessage" class="alert alert-info">Welcome to the Cashflow Game! Press Start to
+                                begin.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="game-board">
+                    <h3>Financial Statement</h3>
+                    <div class="income-statement">
+                        <h4>Income Statement</h4>
+                        <div class="mb-2">
+                            <strong>Income:</strong>
+                            <ul class="list-group" id="incomeList">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Salary:</span>
+                                    <span id="salaryStat">$0</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Passive Income:</span>
+                                    <span id="passiveIncomeStat">$0</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Expenses:</strong>
+                            <ul class="list-group" id="expensesList">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Taxes:</span>
+                                    <span id="taxesStat">$0</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Mortgage:</span>
+                                    <span id="mortgageStat">$0</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Other Expenses:</span>
+                                    <span id="otherExpensesStat">$0</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="alert alert-primary">
+                            <strong>Monthly Cash Flow: </strong>
+                            <span id="monthlyCashFlowStat">$0</span>
+                        </div>
+                    </div>
+
+                    <div class="balance-sheet">
+                        <h4>Balance Sheet</h4>
+                        <div class="mb-2">
+                            <strong>Assets:</strong>
+                            <div id="assetsList"></div>
+                        </div>
+                        <div class="mb-2">
+                            <strong>Liabilities:</strong>
+                            <div id="liabilitiesList"></div>
+                        </div>
+                        <div class="alert alert-success">
+                            <strong>Cash: </strong>
+                            <span id="cashStat">$0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="game-board">
+                    <h3>Game Controls</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button id="buyPropertyBtn" class="btn btn-outline-success mb-2 w-100" disabled>Buy
+                                Property</button>
+                            <button id="startBusinessBtn" class="btn btn-outline-primary mb-2 w-100" disabled>Start
+                                Business</button>
+                            <button id="investStocksBtn" class="btn btn-outline-info mb-2 w-100" disabled>Invest in
+                                Stocks</button>
+                        </div>
+                        <div class="col-md-6">
+                            <button id="payDebtBtn" class="btn btn-outline-danger mb-2 w-100" disabled>Pay Off
+                                Debt</button>
+                            <button id="downsizeBtn" class="btn btn-outline-warning mb-2 w-100" disabled>Downsize
+                                Expenses</button>
+                            <button id="sellAssetBtn" class="btn btn-outline-dark mb-2 w-100" disabled>Sell
+                                Asset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal fade" id="opportunityModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Investment Opportunity</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="opportunityContent">
+                    <!-- Content will be filled dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Skip</button>
+                    <button type="button" class="btn btn-primary" id="buyOpportunityBtn">Buy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="doodadModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Expense</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="doodadContent">
+                    <!-- Content will be filled dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Pay</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="marketModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Market Change</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="marketContent">
+                    <!-- Content will be filled dynamically -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Acknowledge</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="professionModal" tabindex="-1" style="display: none;" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Choose Your Profession</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="list-group" id="professionList">
+                        <!-- Professions will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="winModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Congratulations!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>You've escaped the Rat Race! Your passive income now exceeds your expenses.</p>
+                    <p>You can now enter the Fast Track where big deals await!</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Great!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+
+
+        // Game Data
+
+        // Professions
+        const professions = [
+            { title: "Teacher", salary: 3300, taxes: 500, mortgage: 700, otherExpenses: 1200, startingCash: 3000 },
+            { title: "Engineer", salary: 4900, taxes: 1000, mortgage: 1100, otherExpenses: 1500, startingCash: 5000 },
+            { title: "Lawyer", salary: 7500, taxes: 1800, mortgage: 1900, otherExpenses: 2200, startingCash: 8000 },
+            { title: "Doctor", salary: 13200, taxes: 3200, mortgage: 2100, otherExpenses: 3000, startingCash: 10000 },
+            { title: "Small Business Owner", salary: 5500, taxes: 1100, mortgage: 1000, otherExpenses: 1800, startingCash: 6000 },
+            { title: "Freelance Designer", salary: 4000, taxes: 600, mortgage: 800, otherExpenses: 1300, startingCash: 3500 },
+            { title: "Nurse", salary: 5000, taxes: 900, mortgage: 900, otherExpenses: 1400, startingCash: 4500 },
+            { title: "Police Officer", salary: 4200, taxes: 750, mortgage: 850, otherExpenses: 1300, startingCash: 4000 },
+            { title: "Software Developer", salary: 8500, taxes: 1900, mortgage: 1800, otherExpenses: 2000, startingCash: 9000 },
+            { title: "Artist", salary: 2900, taxes: 400, mortgage: 600, otherExpenses: 1100, startingCash: 2800 },
+            { title: "Mechanic", salary: 3700, taxes: 550, mortgage: 750, otherExpenses: 1200, startingCash: 3200 },
+            { title: "Real Estate Agent", salary: 6000, taxes: 1300, mortgage: 1000, otherExpenses: 1700, startingCash: 5500 },
+            { title: "Chef", salary: 4100, taxes: 700, mortgage: 800, otherExpenses: 1250, startingCash: 3600 },
+            { title: "Electrician", salary: 4700, taxes: 800, mortgage: 850, otherExpenses: 1300, startingCash: 4100 },
+            { title: "Plumber", salary: 4500, taxes: 770, mortgage: 820, otherExpenses: 1280, startingCash: 4000 },
+            { title: "Retail Manager", salary: 5200, taxes: 950, mortgage: 950, otherExpenses: 1400, startingCash: 4800 },
+            { title: "Pilot", salary: 11000, taxes: 2600, mortgage: 1900, otherExpenses: 2500, startingCash: 9500 },
+            { title: "Athlete", salary: 15000, taxes: 4000, mortgage: 2500, otherExpenses: 3000, startingCash: 12000 },
+            { title: "YouTuber", salary: 6000, taxes: 1200, mortgage: 1200, otherExpenses: 1800, startingCash: 5000 },
+            { title: "Game Developer", salary: 7800, taxes: 1700, mortgage: 1600, otherExpenses: 1900, startingCash: 7000 },
+            { title: "Architect", salary: 6900, taxes: 1500, mortgage: 1300, otherExpenses: 1800, startingCash: 6200 }
+        ];
+
+        // Opportunities
+        const opportunities = [
+            { title: "Duplex Rental", cost: 40000, downPayment: 10000, cashFlow: 200, type: "real estate" },
+            { title: "4-Plex Rental", cost: 150000, downPayment: 30000, cashFlow: 700, type: "real estate" },
+            { title: "Small Apartment Building", cost: 300000, downPayment: 60000, cashFlow: 1200, type: "real estate" },
+            { title: "Tech Company Stock", cost: 5000, downPayment: 5000, cashFlow: 50, type: "stock" },
+            { title: "Blue Chip Stock", cost: 3000, downPayment: 3000, cashFlow: 30, type: "stock" },
+            { title: "Growth Stock", cost: 2000, downPayment: 2000, cashFlow: 0, potential: 4000, type: "stock" },
+            { title: "Laundromat Business", cost: 25000, downPayment: 25000, cashFlow: 300, type: "business" },
+            { title: "Food Truck", cost: 20000, downPayment: 20000, cashFlow: 500, type: "business" },
+            { title: "Coffee Shop Franchise", cost: 60000, downPayment: 15000, cashFlow: 700, type: "business" },
+            { title: "Online Retail Business", cost: 30000, downPayment: 10000, cashFlow: 600, type: "business" },
+            { title: "Biotech Stock", cost: 4000, downPayment: 4000, cashFlow: 0, potential: 10000, type: "stock" },
+            { title: "Mobile App Investment", cost: 15000, downPayment: 5000, cashFlow: 400, type: "business" },
+            { title: "Vacation Rental", cost: 100000, downPayment: 20000, cashFlow: 800, type: "real estate" },
+            { title: "Crypto Asset", cost: 10000, downPayment: 10000, cashFlow: 0, potential: 30000, type: "stock" },
+            { title: "Car Wash Business", cost: 40000, downPayment: 10000, cashFlow: 600, type: "business" },
+            { title: "Storage Facility", cost: 120000, downPayment: 25000, cashFlow: 1000, type: "real estate" },
+            { title: "Mobile Game Startup", cost: 25000, downPayment: 5000, cashFlow: 300, type: "business" },
+            { title: "Medical Equipment Rental", cost: 70000, downPayment: 15000, cashFlow: 900, type: "business" },
+            { title: "REIT Investment", cost: 8000, downPayment: 8000, cashFlow: 80, type: "stock" },
+            { title: "Antique Car Flip", cost: 10000, downPayment: 10000, cashFlow: 0, potential: 15000, type: "stock" },
+            { title: "Pet Grooming Franchise", cost: 30000, downPayment: 10000, cashFlow: 400, type: "business" }
+        ];
+
+        // Doodads
+        const doodads = [
+            { title: "New TV", cost: 1000, description: "You couldn't resist buying a new big-screen TV." },
+            { title: "Luxury Vacation", cost: 3000, description: "You took a luxury vacation to recharge." },
+            { title: "Car Repair", cost: 800, description: "Your car needed unexpected repairs." },
+            { title: "Medical Bills", cost: 1500, description: "You had some unexpected medical expenses." },
+            { title: "Shopping Spree", cost: 1200, description: "You went on a shopping spree and bought new clothes." },
+            { title: "Home Repairs", cost: 2000, description: "Your home needed some urgent repairs." },
+            { title: "Pet Emergency", cost: 900, description: "Your pet needed urgent medical care." },
+            { title: "Holiday Gifts", cost: 1000, description: "You splurged on gifts during the holidays." },
+            { title: "Wedding", cost: 5000, description: "You had a beautiful wedding!" },
+            { title: "Speeding Ticket", cost: 300, description: "You were caught speeding and had to pay a hefty fine." },
+            { title: "Smartphone Upgrade", cost: 1200, description: "You bought the latest smartphone." },
+            { title: "Concert Tickets", cost: 500, description: "You attended a live concert." },
+            { title: "Furniture Upgrade", cost: 1800, description: "You replaced your old furniture." },
+            { title: "Bike Repair", cost: 400, description: "Your bike needed maintenance." },
+            { title: "New Laptop", cost: 1600, description: "You upgraded your work laptop." },
+            { title: "Gaming Console", cost: 600, description: "You got the latest gaming console." },
+            { title: "Anniversary Celebration", cost: 2000, description: "You treated your partner to something special." },
+            { title: "Babysitter Charges", cost: 300, description: "Paid for a sitter during a night out." },
+            { title: "Backyard Makeover", cost: 2500, description: "You gave your backyard a fresh look." },
+            { title: "Sports Equipment", cost: 850, description: "Bought new sports gear." },
+            { title: "Online Course", cost: 700, description: "Enrolled in an expensive online course." }
+        ];
+
+        // Market Changes
+        const marketChanges = [
+            { title: "Housing Market Boom", effect: "real estate", valueChange: 1.2, description: "The housing market is booming! Real estate values increase by 20%." },
+            { title: "Stock Market Crash", effect: "stock", valueChange: 0.7, description: "The stock market crashed! Stock values decrease by 30%." },
+            { title: "Economic Recession", effect: "all", valueChange: 0.9, description: "Economic recession hits. All asset values decrease by 10%." },
+            { title: "Tech Boom", effect: "stock", valueChange: 1.3, description: "Tech sector is booming! Stock values increase by 30%." },
+            { title: "Real Estate Slump", effect: "real estate", valueChange: 0.8, description: "Real estate market is in a slump. Property values decrease by 20%." },
+            { title: "Economic Prosperity", effect: "all", valueChange: 1.1, description: "Economy is thriving! All asset values increase by 10%." },
+            { title: "Interest Rate Hike", effect: "real estate", valueChange: 0.85, description: "Interest rates increased. Real estate values fall by 15%." },
+            { title: "Government Stimulus", effect: "all", valueChange: 1.15, description: "Stimulus package boosts all markets by 15%." },
+            { title: "Tech Regulation", effect: "stock", valueChange: 0.75, description: "Tech sector faces new regulations. Stock values drop by 25%." },
+            { title: "Infrastructure Boom", effect: "real estate", valueChange: 1.25, description: "New infrastructure boosts property values by 25%." },
+            { title: "Cryptocurrency Surge", effect: "stock", valueChange: 1.5, description: "Crypto prices skyrocket! Values increase by 50%." },
+            { title: "Pandemic Wave", effect: "all", valueChange: 0.6, description: "A pandemic wave hits. Asset values drop by 40%." },
+            { title: "War Scare", effect: "all", valueChange: 0.8, description: "Geopolitical tensions reduce market confidence. 20% value drop." },
+            { title: "Natural Disaster", effect: "real estate", valueChange: 0.7, description: "A natural disaster affects property values." },
+            { title: "Tax Cuts", effect: "all", valueChange: 1.2, description: "Tax relief boosts market performance by 20%." },
+            { title: "Market Correction", effect: "all", valueChange: 0.95, description: "Market stabilizes. Small dip in asset values." },
+            { title: "Tech Bubble", effect: "stock", valueChange: 0.6, description: "Tech bubble bursts. Stocks plummet by 40%." },
+            { title: "Medical Breakthrough", effect: "stock", valueChange: 1.4, description: "Healthcare sector rises. Stocks up 40%." },
+            { title: "Climate Policy Shift", effect: "real estate", valueChange: 1.1, description: "Eco-friendly changes increase green property demand." },
+            { title: "Tourism Boom", effect: "business", valueChange: 1.3, description: "Travel surges. Tourism businesses see a 30% value rise." },
+            { title: "Cybersecurity Crisis", effect: "stock", valueChange: 0.85, description: "Cyber attacks lower stock confidence." }
+        ];
+
+
+
+        // Game state
+        let gameState = {
+            started: false,
+            profession: null,
+            cash: 0,
+            assets: [],
+            liabilities: [],
+            position: 0,
+            salary: 0,
+            taxes: 0,
+            mortgage: 0,
+            otherExpenses: 0,
+            passiveIncome: 0,
+            monthlyCashFlow: 0
+        };
+
+        // DOM elements
+        const startGameBtn = document.getElementById('startGameBtn');
+        const rollDiceBtn = document.getElementById('rollDiceBtn');
+        const endTurnBtn = document.getElementById('endTurnBtn');
+        const buyPropertyBtn = document.getElementById('buyPropertyBtn');
+        const startBusinessBtn = document.getElementById('startBusinessBtn');
+        const investStocksBtn = document.getElementById('investStocksBtn');
+        const payDebtBtn = document.getElementById('payDebtBtn');
+        const downsizeBtn = document.getElementById('downsizeBtn');
+        const sellAssetBtn = document.getElementById('sellAssetBtn');
+        const playerToken = document.getElementById('playerToken');
+        const dice = document.getElementById('dice');
+        const gameMessage = document.getElementById('gameMessage');
+
+        // Modals
+        const professionModal = new bootstrap.Modal(document.getElementById('professionModal'));
+        const opportunityModal = new bootstrap.Modal(document.getElementById('opportunityModal'));
+        const doodadModal = new bootstrap.Modal(document.getElementById('doodadModal'));
+        const marketModal = new bootstrap.Modal(document.getElementById('marketModal'));
+        const winModal = new bootstrap.Modal(document.getElementById('winModal'));
+
+        // Financial Statement elements
+        const salaryStat = document.getElementById('salaryStat');
+        const passiveIncomeStat = document.getElementById('passiveIncomeStat');
+        const taxesStat = document.getElementById('taxesStat');
+        const mortgageStat = document.getElementById('mortgageStat');
+        const otherExpensesStat = document.getElementById('otherExpensesStat');
+        const monthlyCashFlowStat = document.getElementById('monthlyCashFlowStat');
+        const cashStat = document.getElementById('cashStat');
+        const assetsList = document.getElementById('assetsList');
+        const liabilitiesList = document.getElementById('liabilitiesList');
+
+        // Initialize game
+        function initGame() {
+            // Reset game state
+            gameState = {
+                started: true,
+                profession: null,
+                cash: 0,
+                assets: [],
+                liabilities: [],
+                position: 0,
+                salary: 0,
+                taxes: 0,
+                mortgage: 0,
+                otherExpenses: 0,
+                passiveIncome: 0,
+                monthlyCashFlow: 0
+            };
+
+            // Load professions
+            const professionList = document.getElementById('professionList');
+            professionList.innerHTML = '';
+            professions.forEach((profession, index) => {
+                const professionItem = document.createElement('button');
+                professionItem.className = 'list-group-item list-group-item-action';
+                professionItem.innerHTML = `
+            <h5>${profession.title}</h5>
+            <p>Salary: $${profession.salary}/month</p>
+            <p>Expenses: $${profession.taxes + profession.mortgage + profession.otherExpenses}/month</p>
+            <p>Starting Cash: $${profession.startingCash}</p>
+        `;
+                professionItem.addEventListener('click', () => selectProfession(index));
+                professionList.appendChild(professionItem);
+            });
+
+            // Show profession selection
+            professionModal.show();
+
+            // Reset UI
+            playerToken.style.left = '20px';
+            playerToken.style.top = '20px';
+            dice.textContent = 'Roll';
+            updateFinancialStatement();
+
+            // Enable/disable buttons
+            rollDiceBtn.disabled = true;
+            endTurnBtn.disabled = true;
+            buyPropertyBtn.disabled = true;
+            startBusinessBtn.disabled = true;
+            investStocksBtn.disabled = true;
+            payDebtBtn.disabled = true;
+            downsizeBtn.disabled = true;
+            sellAssetBtn.disabled = true;
+        }
+
+        // Select profession
+        function selectProfession(index) {
+            const profession = professions[index];
+            gameState.profession = profession;
+            gameState.salary = profession.salary;
+            gameState.taxes = profession.taxes;
+            gameState.mortgage = profession.mortgage;
+            gameState.otherExpenses = profession.otherExpenses;
+            gameState.cash = profession.startingCash;
+            gameState.monthlyCashFlow = profession.salary - profession.taxes - profession.mortgage - profession.otherExpenses;
+
+            // Add house as liability
+            gameState.liabilities.push({
+                title: "Home Mortgage",
+                cost: profession.mortgage * 100,
+                payment: profession.mortgage,
+                type: "mortgage"
+            });
+
+            updateFinancialStatement();
+            professionModal.hide();
+
+            // Enable game buttons
+            rollDiceBtn.disabled = false;
+            buyPropertyBtn.disabled = false;
+            startBusinessBtn.disabled = false;
+            investStocksBtn.disabled = false;
+            payDebtBtn.disabled = false;
+            downsizeBtn.disabled = false;
+            sellAssetBtn.disabled = false;
+
+            gameMessage.textContent = `You've chosen to be a ${profession.title}. Roll the dice to start!`;
+        }
+
+        // Roll dice
+        function rollDice() {
+            if (!gameState.started) return;
+
+            // Disable roll button during move
+            rollDiceBtn.disabled = true;
+            endTurnBtn.disabled = false;
+
+            // Roll dice
+            const diceValue = Math.floor(Math.random() * 6) + 1;
+            dice.textContent = diceValue;
+
+            // Move player token
+            movePlayer(diceValue);
+        }
+
+        // Move player token
+        function movePlayer(steps) {
+            // Track positions
+            const positions = [
+                { x: 20, y: 20 },   // Payday
+                { x: 120, y: 50 },  // Opportunity
+                { x: 200, y: 120 }, // Doodad
+                { x: 120, y: 200 }, // Market
+                { x: 20, y: 230 },  // Opportunity
+                { x: 280, y: 170 }, // Doodad
+                { x: 280, y: 80 }   // Opportunity
+            ];
+
+            // Calculate new position
+            gameState.position = (gameState.position + steps) % positions.length;
+
+            // Animate movement
+            let currentStep = 0;
+            const moveInterval = setInterval(() => {
+                if (currentStep > steps) {
+                    clearInterval(moveInterval);
+                    handleSquareEffect(gameState.position);
+                    return;
+                }
+
+                const newPos = (gameState.position - steps + currentStep + positions.length) % positions.length;
+                playerToken.style.left = positions[newPos].x + 'px';
+                playerToken.style.top = positions[newPos].y + 'px';
+
+                currentStep++;
+            }, 300);
+        }
+
+        // Handle square effects
+        function handleSquareEffect(position) {
+            switch (position) {
+                case 0: // Payday
+                    handlePayday();
+                    break;
+                case 1: // Opportunity
+                case 4: // Opportunity
+                case 6: // Opportunity
+                    showOpportunity();
+                    break;
+                case 2: // Doodad
+                case 5: // Doodad
+                    showDoodad();
+                    break;
+                case 3: // Market
+                    showMarketChange();
+                    break;
+            }
+        }
+
+        // Handle payday
+        function handlePayday() {
+            gameState.cash += gameState.salary;
+            gameState.cash += gameState.passiveIncome;
+            gameState.cash -= (gameState.taxes + gameState.mortgage + gameState.otherExpenses);
+
+            updateFinancialStatement();
+            gameMessage.textContent = `Payday! You received your salary and passive income.`;
+
+            // Check win condition
+            if (gameState.passiveIncome > (gameState.taxes + gameState.mortgage + gameState.otherExpenses)) {
+                winModal.show();
+            }
+        }
+
+        // Show opportunity
+        function showOpportunity() {
+            const opportunity = opportunities[Math.floor(Math.random() * opportunities.length)];
+            const opportunityContent = document.getElementById('opportunityContent');
+
+            opportunityContent.innerHTML = `
+        <h4>${opportunity.title}</h4>
+        <p><strong>Cost:</strong> $${opportunity.cost}</p>
+        <p><strong>Down Payment:</strong> $${opportunity.downPayment}</p>
+        <p><strong>Monthly Cash Flow:</strong> $${opportunity.cashFlow}</p>
+        <p><strong>Type:</strong> ${capitalizeFirstLetter(opportunity.type)}</p>
+        <p>Do you want to buy this opportunity?</p>
+    `;
+
+            const buyOpportunityBtn = document.getElementById('buyOpportunityBtn');
+            buyOpportunityBtn.onclick = () => buyOpportunity(opportunity);
+
+            opportunityModal.show();
+        }
+
+        // Buy opportunity
+        function buyOpportunity(opportunity) {
+            if (gameState.cash < opportunity.downPayment) {
+                alert("You don't have enough cash for the down payment!");
+                return;
+            }
+
+            // Deduct down payment
+            gameState.cash -= opportunity.downPayment;
+
+            // Add asset
+            gameState.assets.push({
+                title: opportunity.title,
+                cost: opportunity.cost,
+                downPayment: opportunity.downPayment,
+                cashFlow: opportunity.cashFlow,
+                type: opportunity.type
+            });
+
+            // Add liability if financed
+            if (opportunity.downPayment < opportunity.cost) {
+                gameState.liabilities.push({
+                    title: opportunity.title + " Loan",
+                    cost: opportunity.cost - opportunity.downPayment,
+                    payment: (opportunity.cost - opportunity.downPayment) * 0.01, // 1% monthly payment
+                    type: opportunity.type
+                });
+            }
+
+            // Update passive income
+            gameState.passiveIncome += opportunity.cashFlow;
+            gameState.monthlyCashFlow = gameState.salary + gameState.passiveIncome - gameState.taxes - gameState.mortgage - gameState.otherExpenses;
+
+            updateFinancialStatement();
+            opportunityModal.hide();
+            gameMessage.textContent = `You purchased ${opportunity.title}!`;
+        }
+
+        // Show doodad expense
+        function showDoodad() {
+            const doodad = doodads[Math.floor(Math.random() * doodads.length)];
+            const doodadContent = document.getElementById('doodadContent');
+
+            doodadContent.innerHTML = `
+        <h4>${doodad.title}</h4>
+        <p>${doodad.description}</p>
+        <p><strong>Cost:</strong> $${doodad.cost}</p>
+        <p>This amount will be deducted from your cash.</p>
+    `;
+
+            // Handle payment when modal is closed
+            document.querySelector('#doodadModal .btn-primary').onclick = () => {
+                gameState.cash -= doodad.cost;
+                updateFinancialStatement();
+                gameMessage.textContent = `You spent $${doodad.cost} on ${doodad.title}.`;
+            };
+
+            doodadModal.show();
+        }
+
+        // Show market change
+        function showMarketChange() {
+            const marketChange = marketChanges[Math.floor(Math.random() * marketChanges.length)];
+            const marketContent = document.getElementById('marketContent');
+
+            marketContent.innerHTML = `
+        <h4>${marketChange.title}</h4>
+        <p>${marketChange.description}</p>
+    `;
+
+            // Apply market changes
+            document.querySelector('#marketModal .btn-primary').onclick = () => {
+                applyMarketChange(marketChange);
+                updateFinancialStatement();
+                gameMessage.textContent = marketChange.description;
+            };
+
+            marketModal.show();
+        }
+
+        // Apply market changes to assets
+        function applyMarketChange(marketChange) {
+            gameState.assets.forEach(asset => {
+                if (marketChange.effect === 'all' || marketChange.effect === asset.type) {
+                    asset.cost = Math.round(asset.cost * marketChange.valueChange);
+                }
+            });
+        }
+
+        // Update financial statement
+        function updateFinancialStatement() {
+            // Update income statement
+            salaryStat.textContent = `$${gameState.salary}`;
+            passiveIncomeStat.textContent = `$${gameState.passiveIncome}`;
+            taxesStat.textContent = `$${gameState.taxes}`;
+            mortgageStat.textContent = `$${gameState.mortgage}`;
+            otherExpensesStat.textContent = `$${gameState.otherExpenses}`;
+            monthlyCashFlowStat.textContent = `$${gameState.monthlyCashFlow}`;
+            cashStat.textContent = `$${gameState.cash}`;
+
+            // Update assets list
+            assetsList.innerHTML = '';
+            gameState.assets.forEach(asset => {
+                const assetEl = document.createElement('div');
+                assetEl.className = 'asset';
+                assetEl.innerHTML = `
+            <div class="d-flex justify-content-between">
+                <strong>${asset.title}</strong>
+                <span>$${asset.cost}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Monthly Cash Flow:</span>
+                <span>$${asset.cashFlow}</span>
+            </div>
+        `;
+                assetsList.appendChild(assetEl);
+            });
+
+            // Update liabilities list
+            liabilitiesList.innerHTML = '';
+            gameState.liabilities.forEach(liability => {
+                const liabilityEl = document.createElement('div');
+                liabilityEl.className = 'liability';
+                liabilityEl.innerHTML = `
+            <div class="d-flex justify-content-between">
+                <strong>${liability.title}</strong>
+                <span>$${liability.cost}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Monthly Payment:</span>
+                <span>$${liability.payment}</span>
+            </div>
+        `;
+                liabilitiesList.appendChild(liabilityEl);
+            });
+        }
+
+        // Buy property action
+        function buyProperty() {
+            const realEstateOpportunities = opportunities.filter(opp => opp.type === 'real estate');
+            const opportunity = realEstateOpportunities[Math.floor(Math.random() * realEstateOpportunities.length)];
+
+            const opportunityContent = document.getElementById('opportunityContent');
+            opportunityContent.innerHTML = `
+        <h4>${opportunity.title}</h4>
+        <p><strong>Cost:</strong> $${opportunity.cost}</p>
+        <p><strong>Down Payment:</strong> $${opportunity.downPayment}</p>
+        <p><strong>Monthly Cash Flow:</strong> $${opportunity.cashFlow}</p>
+        <p>Do you want to buy this property?</p>
+    `;
+
+            const buyOpportunityBtn = document.getElementById('buyOpportunityBtn');
+            buyOpportunityBtn.onclick = () => buyOpportunity(opportunity);
+
+            opportunityModal.show();
+        }
+
+        // Start business action
+        function startBusiness() {
+            const businessOpportunities = opportunities.filter(opp => opp.type === 'business');
+            const opportunity = businessOpportunities[Math.floor(Math.random() * businessOpportunities.length)];
+
+            const opportunityContent = document.getElementById('opportunityContent');
+            opportunityContent.innerHTML = `
+        <h4>${opportunity.title}</h4>
+        <p><strong>Cost:</strong> $${opportunity.cost}</p>
+        <p><strong>Down Payment:</strong> $${opportunity.downPayment}</p>
+        <p><strong>Monthly Cash Flow:</strong> $${opportunity.cashFlow}</p>
+        <p>Do you want to start this business?</p>
+    `;
+
+            const buyOpportunityBtn = document.getElementById('buyOpportunityBtn');
+            buyOpportunityBtn.onclick = () => buyOpportunity(opportunity);
+
+            opportunityModal.show();
+        }
+
+        // Invest in stocks action
+        function investStocks() {
+            const stockOpportunities = opportunities.filter(opp => opp.type === 'stock');
+            const opportunity = stockOpportunities[Math.floor(Math.random() * stockOpportunities.length)];
+
+            const opportunityContent = document.getElementById('opportunityContent');
+            opportunityContent.innerHTML = `
+        <h4>${opportunity.title}</h4>
+        <p><strong>Cost:</strong> $${opportunity.cost}</p>
+        <p><strong>Monthly Dividend:</strong> $${opportunity.cashFlow}</p>
+        ${opportunity.potential ? `<p><strong>Growth Potential:</strong> Up to $${opportunity.potential}</p>` : ''}
+        <p>Do you want to invest in this stock?</p>
+    `;
+
+            const buyOpportunityBtn = document.getElementById('buyOpportunityBtn');
+            buyOpportunityBtn.onclick = () => buyOpportunity(opportunity);
+
+            opportunityModal.show();
+        }
+
+        // Pay debt action
+        function payDebt() {
+            if (gameState.liabilities.length === 0) {
+                alert("You don't have any debts to pay off!");
+                return;
+            }
+
+            const liabilitiesContent = document.getElementById('opportunityContent');
+            liabilitiesContent.innerHTML = '<h4>Select a Debt to Pay Off</h4>';
+
+            gameState.liabilities.forEach((liability, index) => {
+                if (liability.title !== "Home Mortgage") { // Can't pay off home mortgage in this simple version
+                    const liabilityItem = document.createElement('div');
+                    liabilityItem.className = 'liability mb-3 p-2';
+                    liabilityItem.innerHTML = `
+                <div class="d-flex justify-content-between">
+                    <strong>${liability.title}</strong>
+                    <span>$${liability.cost}</span>
+                </div>
+                <button class="btn btn-sm btn-danger mt-1 pay-debt-btn" data-index="${index}">Pay Off</button>
+            `;
+                    liabilitiesContent.appendChild(liabilityItem);
+                }
+            });
+
+            document.querySelectorAll('.pay-debt-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const liabilityIndex = parseInt(this.getAttribute('data-index'));
+                    const liability = gameState.liabilities[liabilityIndex];
+
+                    if (gameState.cash < liability.cost) {
+                        alert("You don't have enough cash to pay off this debt!");
+                        return;
+                    }
+
+                    // Find associated asset
+                    const assetIndex = gameState.assets.findIndex(asset =>
+                        asset.title === liability.title.replace(" Loan", ""));
+
+                    if (assetIndex !== -1) {
+                        // Update asset cash flow (no longer paying loan)
+                        gameState.assets[assetIndex].cashFlow += liability.payment;
+                        gameState.passiveIncome += liability.payment;
+                    }
+
+                    // Pay off debt
+                    gameState.cash -= liability.cost;
+                    gameState.liabilities.splice(liabilityIndex, 1);
+
+                    gameState.monthlyCashFlow = gameState.salary + gameState.passiveIncome - gameState.taxes - gameState.mortgage - gameState.otherExpenses;
+
+                    updateFinancialStatement();
+                    opportunityModal.hide();
+                    gameMessage.textContent = `You paid off ${liability.title}!`;
+                });
+            });
+
+            document.querySelector('#opportunityModal .modal-title').textContent = 'Pay Off Debt';
+            document.querySelector('#opportunityModal .modal-footer').style.display = 'none';
+
+            opportunityModal.show();
+
+            // Reset modal on close
+            opportunityModal._element.addEventListener('hidden.bs.modal', function () {
+                document.querySelector('#opportunityModal .modal-title').textContent = 'Investment Opportunity';
+                document.querySelector('#opportunityModal .modal-footer').style.display = 'flex';
+            }, { once: true });
+        }
+
+        // Downsize expenses action
+        function downsizeExpenses() {
+            const reduction = Math.floor(gameState.otherExpenses * 0.1); // 10% reduction
+
+            if (reduction <= 0) {
+                alert("You can't reduce your expenses any further!");
+                return;
+            }
+
+            gameState.otherExpenses -= reduction;
+            gameState.monthlyCashFlow = gameState.salary + gameState.passiveIncome - gameState.taxes - gameState.mortgage - gameState.otherExpenses;
+
+            updateFinancialStatement();
+            gameMessage.textContent = `You reduced your monthly expenses by $${reduction}!`;
+        }
+
+        // Sell asset action
+        function sellAsset() {
+            if (gameState.assets.length === 0) {
+                alert("You don't have any assets to sell!");
+                return;
+            }
+
+            const assetsContent = document.getElementById('opportunityContent');
+            assetsContent.innerHTML = '<h4>Select an Asset to Sell</h4>';
+
+            gameState.assets.forEach((asset, index) => {
+                const assetItem = document.createElement('div');
+                assetItem.className = 'asset mb-3 p-2';
+                assetItem.innerHTML = `
+            <div class="d-flex justify-content-between">
+                <strong>${asset.title}</strong>
+                <span>$${asset.cost}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Monthly Cash Flow:</span>
+                <span>$${asset.cashFlow}</span>
+            </div>
+            <button class="btn btn-sm btn-success mt-1 sell-asset-btn" data-index="${index}">Sell</button>
+            `;
+                assetsContent.appendChild(assetItem);
+            });
+
+            document.querySelectorAll('.sell-asset-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const assetIndex = parseInt(this.getAttribute('data-index'));
+                    const asset = gameState.assets[assetIndex];
+
+                    // Find associated liability
+                    const liabilityIndex = gameState.liabilities.findIndex(liability =>
+                        liability.title === asset.title + " Loan");
+
+                    // Sell asset
+                    gameState.cash += asset.cost;
+                    gameState.passiveIncome -= asset.cashFlow;
+
+                    // Pay off associated liability if exists
+                    if (liabilityIndex !== -1) {
+                        const liability = gameState.liabilities[liabilityIndex];
+                        gameState.cash -= liability.cost; // Pay off the loan
+                        gameState.liabilities.splice(liabilityIndex, 1);
+                    }
+
+                    gameState.assets.splice(assetIndex, 1);
+
+                    gameState.monthlyCashFlow = gameState.salary + gameState.passiveIncome - gameState.taxes - gameState.mortgage - gameState.otherExpenses;
+
+                    updateFinancialStatement();
+                    opportunityModal.hide();
+                    gameMessage.textContent = `You sold ${asset.title}!`;
+                });
+            });
+
+            document.querySelector('#opportunityModal .modal-title').textContent = 'Sell Asset';
+            document.querySelector('#opportunityModal .modal-footer').style.display = 'none';
+
+            opportunityModal.show();
+
+            // Reset modal on close
+            opportunityModal._element.addEventListener('hidden.bs.modal', function () {
+                document.querySelector('#opportunityModal .modal-title').textContent = 'Investment Opportunity';
+                document.querySelector('#opportunityModal .modal-footer').style.display = 'flex';
+            }, { once: true });
+        }
+
+        // End turn action
+        function endTurn() {
+            rollDiceBtn.disabled = false;
+            endTurnBtn.disabled = true;
+        }
+
+        // Helper function to capitalize first letter
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        // Add event listeners
+        startGameBtn.addEventListener('click', initGame);
+        rollDiceBtn.addEventListener('click', rollDice);
+        endTurnBtn.addEventListener('click', endTurn);
+        buyPropertyBtn.addEventListener('click', buyProperty);
+        startBusinessBtn.addEventListener('click', startBusiness);
+        investStocksBtn.addEventListener('click', investStocks);
+        payDebtBtn.addEventListener('click', payDebt);
+        downsizeBtn.addEventListener('click', downsizeExpenses);
+        sellAssetBtn.addEventListener('click', sellAsset);
+        dice.addEventListener('click', rollDice);
+
+        // Initialize dice text
+        dice.textContent = 'Roll';
+    </script>
+
+</body>
+
+</html>
