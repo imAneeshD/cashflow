@@ -270,6 +270,8 @@
                                 Business</button>
                             <button id="investStocksBtn" class="btn btn-outline-info mb-2 w-100" disabled>Invest in
                                 Stocks</button>
+                            <button id="takeLoanBtn" class="btn btn-outline-warning mb-2 w-100">Take Loan
+                            </button>
                         </div>
                         <div class="col-md-6">
                             <button id="payDebtBtn" class="btn btn-outline-danger mb-2 w-100" disabled>Pay Off
@@ -374,7 +376,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>
-
+        document.getElementById('takeLoanBtn').addEventListener('click', takeLoan);
 
         // Game Data
 
@@ -624,6 +626,15 @@
             rollDiceBtn.disabled = true;
             endTurnBtn.disabled = false;
 
+            // Pay salary and cash flow
+            gameState.cash += gameState.salary;
+            gameState.cash += gameState.passiveIncome;
+            gameState.cash -= (gameState.taxes + gameState.mortgage + gameState.otherExpenses);
+
+            // Update financial statement
+            updateFinancialStatement();
+            gameMessage.textContent = `You received your salary ($${gameState.salary}) and passive income ($${gameState.passiveIncome}), and paid expenses ($${gameState.taxes + gameState.mortgage + gameState.otherExpenses}).`;
+
             // Roll dice
             const diceValue = Math.floor(Math.random() * 6) + 1;
             dice.textContent = diceValue;
@@ -721,13 +732,48 @@
             opportunityModal.show();
         }
 
-        // Buy opportunity
+
+        // Buy opportunity with loan option
         function buyOpportunity(opportunity) {
             if (gameState.cash < opportunity.downPayment) {
-                alert("You don't have enough cash for the down payment!");
+                // Show loan option if not enough cash
+                const opportunityContent = document.getElementById('opportunityContent');
+                const shortAmount = opportunity.downPayment - gameState.cash;
+                const monthlyPayment = Math.round(shortAmount * 0.02); // 2% monthly interest
+
+                opportunityContent.innerHTML += `
+            <div class="alert alert-warning mt-3">
+                <p>You're short by $${shortAmount} for this purchase.</p>
+                <p>Would you like to take a loan for $${shortAmount} with a monthly payment of $${monthlyPayment}?</p>
+                <button class="btn btn-sm btn-warning" id="takeLoanBtn">Take Loan</button>
+                <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        `;
+
+                document.getElementById('takeLoanBtn').addEventListener('click', function () {
+                    // Add the loan
+                    gameState.liabilities.push({
+                        title: "Personal Loan",
+                        cost: shortAmount,
+                        payment: monthlyPayment,
+                        type: "loan"
+                    });
+
+                    // Now proceed with purchase
+                    completeOpportunityPurchase(opportunity);
+                    opportunityModal.hide();
+                });
+
                 return;
             }
 
+            // If enough cash, proceed normally
+            completeOpportunityPurchase(opportunity);
+            opportunityModal.hide();
+        }
+
+        // Helper function to complete opportunity purchase
+        function completeOpportunityPurchase(opportunity) {
             // Deduct down payment
             gameState.cash -= opportunity.downPayment;
 
@@ -755,11 +801,11 @@
             gameState.monthlyCashFlow = gameState.salary + gameState.passiveIncome - gameState.taxes - gameState.mortgage - gameState.otherExpenses;
 
             updateFinancialStatement();
-            opportunityModal.hide();
             gameMessage.textContent = `You purchased ${opportunity.title}!`;
         }
 
         // Show doodad expense
+
         function showDoodad() {
             const doodad = doodads[Math.floor(Math.random() * doodads.length)];
             const doodadContent = document.getElementById('doodadContent');
@@ -768,17 +814,69 @@
         <h4>${doodad.title}</h4>
         <p>${doodad.description}</p>
         <p><strong>Cost:</strong> $${doodad.cost}</p>
-        <p>This amount will be deducted from your cash.</p>
+        ${gameState.cash < doodad.cost ?
+                    `<div class="alert alert-danger mt-2">You don't have enough cash! You'll need to take a loan.</div>` :
+                    ''}
     `;
 
             // Handle payment when modal is closed
             document.querySelector('#doodadModal .btn-primary').onclick = () => {
-                gameState.cash -= doodad.cost;
+                if (gameState.cash >= doodad.cost) {
+                    // Pay normally
+                    gameState.cash -= doodad.cost;
+                    gameMessage.textContent = `You spent $${doodad.cost} on ${doodad.title}.`;
+                } else {
+                    // Take a loan
+                    const shortAmount = doodad.cost - gameState.cash;
+                    const monthlyPayment = Math.round(shortAmount * 0.02); // 2% monthly interest
+
+                    gameState.liabilities.push({
+                        title: "Personal Loan",
+                        cost: shortAmount,
+                        payment: monthlyPayment,
+                        type: "loan"
+                    });
+
+                    gameState.cash = 0; // Spend all remaining cash
+                    gameState.monthlyCashFlow = gameState.salary + gameState.passiveIncome - gameState.taxes - gameState.mortgage - gameState.otherExpenses;
+
+                    gameMessage.textContent = `You took a loan for $${shortAmount} to pay for ${doodad.title}. Monthly payment: $${monthlyPayment}.`;
+                }
+
                 updateFinancialStatement();
-                gameMessage.textContent = `You spent $${doodad.cost} on ${doodad.title}.`;
             };
 
             doodadModal.show();
+        }
+
+        function takeLoan() {
+            const loanAmount = prompt("How much would you like to borrow? (Minimum $1000)");
+            const amount = parseInt(loanAmount);
+
+            if (isNaN(amount)) {
+                alert("Please enter a valid number");
+                return;
+            }
+
+            if (amount < 1000) {
+                alert("Minimum loan amount is $1000");
+                return;
+            }
+
+            const monthlyPayment = Math.round(amount * 0.02); // 2% monthly interest
+
+            gameState.cash += amount;
+            gameState.liabilities.push({
+                title: "Personal Loan",
+                cost: amount,
+                payment: monthlyPayment,
+                type: "loan"
+            });
+
+            gameState.monthlyCashFlow = gameState.salary + gameState.passiveIncome - gameState.taxes - gameState.mortgage - gameState.otherExpenses;
+
+            updateFinancialStatement();
+            gameMessage.textContent = `You took a loan for $${amount}. Monthly payment: $${monthlyPayment}.`;
         }
 
         // Show market change
