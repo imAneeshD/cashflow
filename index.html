@@ -734,6 +734,7 @@
 
 
         // Buy opportunity with loan option
+    // Buy opportunity with loan option
         function buyOpportunity(opportunity) {
             if (gameState.cash < opportunity.downPayment) {
                 // Show loan option if not enough cash
@@ -745,12 +746,12 @@
             <div class="alert alert-warning mt-3">
                 <p>You're short by $${shortAmount} for this purchase.</p>
                 <p>Would you like to take a loan for $${shortAmount} with a monthly payment of $${monthlyPayment}?</p>
-                <button class="btn btn-sm btn-warning" id="takeLoanBtn">Take Loan</button>
+                <button class="btn btn-sm btn-warning" id="confirmLoanForPurchase">Take Loan</button>
                 <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
             </div>
         `;
 
-                document.getElementById('takeLoanBtn').addEventListener('click', function () {
+                document.getElementById('confirmLoanForPurchase').addEventListener('click', function () {
                     // Add the loan
                     gameState.liabilities.push({
                         title: "Personal Loan",
@@ -759,9 +760,14 @@
                         type: "loan"
                     });
 
-                    // Now proceed with purchase
+                    // Now we have enough cash, proceed with purchase
+                    gameState.cash += shortAmount; // Add the loan amount to cash
                     completeOpportunityPurchase(opportunity);
                     opportunityModal.hide();
+
+                    // Update financial statement to show the new loan
+                    updateFinancialStatement();
+                    gameMessage.textContent = `You took a loan for $${shortAmount} and purchased ${opportunity.title}. Monthly payment: $${monthlyPayment}.`;
                 });
 
                 return;
@@ -786,22 +792,22 @@
                 type: opportunity.type
             });
 
-            // Add liability if financed
+            // Add liability if financed (property loan)
             if (opportunity.downPayment < opportunity.cost) {
+                const loanAmount = opportunity.cost - opportunity.downPayment;
                 gameState.liabilities.push({
                     title: opportunity.title + " Loan",
-                    cost: opportunity.cost - opportunity.downPayment,
-                    payment: (opportunity.cost - opportunity.downPayment) * 0.01, // 1% monthly payment
+                    cost: loanAmount,
+                    payment: loanAmount * 0.01, // 1% monthly payment
                     type: opportunity.type
                 });
             }
 
-            // Update passive income
+            // Update passive income and cash flow
             gameState.passiveIncome += opportunity.cashFlow;
             gameState.monthlyCashFlow = gameState.salary + gameState.passiveIncome - gameState.taxes - gameState.mortgage - gameState.otherExpenses;
 
             updateFinancialStatement();
-            gameMessage.textContent = `You purchased ${opportunity.title}!`;
         }
 
         // Show doodad expense
